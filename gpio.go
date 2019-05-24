@@ -97,9 +97,9 @@ func OpenPin(number int, direction Direction) (*Pin, error) {
 	var flag int
 	switch direction {
 	case IN:
-		flag = os.O_RDONLY
+		flag = os.O_RDWR
 	case OUT:
-		flag = os.O_WRONLY
+		flag = os.O_RDWR
 	}
 	f, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/value", number), flag, 0)
 	if err != nil {
