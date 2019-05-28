@@ -2,9 +2,7 @@ package pi
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"strings"
 )
 
 // Indicate whether the pin is used for input or output.
@@ -55,33 +53,15 @@ func setPinExport(number int, export bool) error {
 	return nil
 }
 
-// Set the direction of a pin.
-func setPinDirection(number int, direction Direction) error {
-	filename := fmt.Sprintf("/sys/class/gpio/gpio%d/direction", number)
-	f, err := os.OpenFile(filename, os.O_WRONLY, 0)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	var data []byte
-	switch direction {
-	case IN:
-		data = []byte("in\n")
-	case OUT:
-		data = []byte("out\n")
-	}
-	_, err = f.Write(data)
-	return err
-}
-
 // An individual GPIO pin.
 type Pin struct {
-	number int
-	value  *os.File
+	number    int
+	value     *os.File
+	direction *os.File
 }
 
 // Prepare a pin for input or output.
-func OpenPin(number int, direction Direction) (*Pin, error) {
+func OpenPin(number int) (*Pin, error) {
 	e, err := isPinExported(number)
 	if err != nil {
 		return nil, err
@@ -91,49 +71,48 @@ func OpenPin(number int, direction Direction) (*Pin, error) {
 			return nil, err
 		}
 	}
-	if err := setPinDirection(number, direction); err != nil {
+	filename := fmt.Sprintf("/sys/class/gpio/gpio%d/direction", number)
+	f1, err := os.OpenFile(filename, os.O_RDWR, os.ModePerm)
+	if err != nil {
 		return nil, err
 	}
-	var flag int
-	switch direction {
-	case IN:
-		flag = os.O_RDWR
-	case OUT:
-		flag = os.O_RDWR
-	}
-	f, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/value", number), flag, 0)
+	f2, err := os.OpenFile(fmt.Sprintf("/sys/class/gpio/gpio%d/value", number), os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
 	return &Pin{
-		number: number,
-		value:  f,
+		number:    number,
+		value:     f2,
+		direction: f1,
 	}, nil
 }
 
-func (p *Pin) SetDirection(direction Direction) error {
-	return setPinDirection(p.number, direction)
+func (p *Pin) Set(direction Direction) error {
+	var data []byte
+	switch direction {
+	case IN:
+		data = []byte("in\n")
+	case OUT:
+		data = []byte("out\n")
+	}
+	_, err := p.direction.Write(data)
+	return err
 }
 
 // Read the current value of the pin.
 func (p *Pin) Read() (Value, error) {
-	// seek to beginning of file in case we've read it before
-	if _, err := p.value.Seek(0, 0); err != nil {
+	d := make([]byte, 1)
+	nr, err := p.value.ReadAt(d, 0)
+	if nr == 0 || err != nil {
 		return LOW, err
 	}
-
-	d, err := ioutil.ReadAll(p.value)
-	if err != nil {
-		return LOW, err
-	}
-	value := strings.TrimSpace(string(d))
-	switch value {
-	case "0":
+	switch d[0] {
+	case '0':
 		return LOW, nil
-	case "1":
+	case '1':
 		return HIGH, nil
 	default:
-		return 0, fmt.Errorf("unrecognized value '%s'", value)
+		return 0, fmt.Errorf("unrecognized value '%s'", d)
 	}
 }
 

@@ -10,34 +10,44 @@ import (
 
 var (
 	str        = kingpin.Flag("string", "string content").Short('s').Default("HELLO").String()
-	animation  = kingpin.Flag("animation", "animation of string").Short('a').PlaceHolder("flow,wipe,flash,normal").Default("normal").String()
+	animation  = kingpin.Flag("animation", "animation of string:flow,wipe,flash,normal").Short('a').Default("normal").String()
 	duration   = kingpin.Flag("duration", "duration of diget change").Short('d').Default("1000").Int()
 	brightness = kingpin.Flag("brightness", "brightness of display:0-7").Short('b').Default("7").Int()
 	clkPin     = kingpin.Flag("clk", "clock pin no.").Default("2").Int()
 	dioPin     = kingpin.Flag("dlo", "data io pin no.").Default("3").Int()
 	loop       = kingpin.Flag("loop", "loop").Short('l').Default("true").Bool()
-	app        = kingpin.Arg("app", "sub command").Required().String()
+	app        = kingpin.Arg("app", "sub command:time,string,light,clear").Required().String()
+)
+
+var (
+	tm *modules.TM1637
 )
 
 func main() {
 	kingpin.Parse()
+	var err error
+	tm, err = modules.OpenTM1637(*clkPin, *dioPin, *brightness)
+	if err != nil {
+		panic(err)
+	}
+	defer tm.Close()
 
 	switch *app {
 	case "time":
 		displayTime()
 	case "string":
 		displayString()
+	case "clear":
+		log.Println("clear")
+		tm.Show([4]rune{'.', '.', '.', '.'}, false)
+	case "light":
+		log.Println("light")
+		tm.Show([4]rune{8, 8, 8, 8}, true)
 	}
 }
 
 func displayString() {
 	log.Println("dispay string:", *str)
-
-	tm, err := modules.OpenTM1637(*clkPin, *dioPin, *brightness)
-	if err != nil {
-		panic(err)
-	}
-	defer tm.Close()
 
 	frames := make([][4]rune, 0)
 	switch *animation {
@@ -91,11 +101,6 @@ func displayString() {
 func displayTime() {
 	log.Println("dislpay time")
 
-	tm, err := modules.OpenTM1637(*clkPin, *dioPin, *brightness)
-	if err != nil {
-		panic(err)
-	}
-	defer tm.Close()
 	colon := true
 	for {
 		now := time.Now()

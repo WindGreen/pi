@@ -76,11 +76,11 @@ func OpenTM1637(clkPin, dataPin, brightness int) (tm *TM1637, err error) {
 		return nil, errors.New("brightness out of define")
 	}
 	tm.brightness = brightness
-	tm.clckPin, err = pi.OpenPin(clkPin, pi.OUT)
+	tm.clckPin, err = pi.OpenPin(clkPin)
 	if err != nil {
 		return nil, err
 	}
-	tm.dataPin, err = pi.OpenPin(dataPin, pi.OUT)
+	tm.dataPin, err = pi.OpenPin(dataPin)
 	if err != nil {
 		return nil, err
 	}
@@ -151,11 +151,6 @@ func (tm *TM1637) Close() error {
 	return nil
 }
 
-func (tm *TM1637) Clear() error {
-
-	return nil
-}
-
 func (tm *TM1637) flush() error {
 	return nil
 }
@@ -198,7 +193,7 @@ func (tm *TM1637) writeByte(d byte) error {
 	tm.clckPin.Write(pi.LOW)
 	tm.dataPin.Write(pi.HIGH)
 	tm.clckPin.Write(pi.HIGH)
-	tm.dataPin.SetDirection(pi.IN)
+	tm.dataPin.Set(pi.IN)
 
 	for {
 		v, err := tm.dataPin.Read()
@@ -215,6 +210,6 @@ func (tm *TM1637) writeByte(d byte) error {
 			time.Sleep(time.Millisecond)
 		}
 	}
-	tm.dataPin.SetDirection(pi.OUT)
+	tm.dataPin.Set(pi.OUT)
 	return nil
 }
