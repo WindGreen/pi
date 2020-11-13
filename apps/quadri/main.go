@@ -14,7 +14,7 @@ var (
 	duration   = kingpin.Flag("duration", "duration of diget change").Short('d').Default("1000").Int()
 	brightness = kingpin.Flag("brightness", "brightness of display:0-7").Short('b').Default("7").Int()
 	clkPin     = kingpin.Flag("clk", "clock pin no.").Default("2").Int()
-	dioPin     = kingpin.Flag("dlo", "data io pin no.").Default("3").Int()
+	dioPin     = kingpin.Flag("dio", "data io pin no.").Default("3").Int()
 	loop       = kingpin.Flag("loop", "loop").Short('l').Default("true").Bool()
 	app        = kingpin.Arg("app", "sub command:time,string,light,clear").Required().String()
 )

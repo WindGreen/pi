@@ -55,6 +55,8 @@ var TM1637_MAP = map[rune]byte{
 	'u': 0x1c,
 	'V': 0x3e,
 	'v': 0x1c,
+	'-': 0x40,
+	'_': 0x08,
 }
 
 const (
@@ -84,6 +86,8 @@ func OpenTM1637(clkPin, dataPin, brightness int) (tm *TM1637, err error) {
 	if err != nil {
 		return nil, err
 	}
+	tm.clckPin.Set(pi.OUT)
+	tm.dataPin.Set(pi.OUT)
 	return tm, nil
 }
 
@@ -104,11 +108,16 @@ func (tm *TM1637) Clear() error {
 	return nil
 }
 
+// to write self defined byte, append prefix 0x80 to r, means r | 0x80
 func (tm *TM1637) WriteRune(pos int, r rune) error {
 	if pos < 0 || pos > 3 {
 		return errors.New("tm1637 index out of range")
 	}
-	tm.WriteByte(pos, TM1637_MAP[r])
+	if _, exist := TM1637_MAP[r]; exist {
+		tm.WriteByte(pos, TM1637_MAP[r])
+	} else {
+		tm.WriteByte(pos, byte(r)&0x7F)
+	}
 	return nil
 }
 
