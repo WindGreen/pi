@@ -59,23 +59,23 @@ func main() {
 				continue
 			}
 
-			result := [4]rune{'.', 0, 0, 'P'}
+			result := [4]rune{'L', 0, 0, 0}
 			p := int(math.Round(percent))
-			for i := 2; i >= 0; i-- {
+			for i := 3; i > 0; i-- {
 				result[i] = rune(p % 10)
 				p /= 10
 			}
-			if result[0] == 0 {
-				result[0] = '.'
-				if result[1] == 0 {
-					result[1] = '.'
+			if result[1] == 0 {
+				result[1] = '.'
+				if result[2] == 0 {
+					result[2] = '.'
 				}
 			}
 			tm.Show(result, false)
 			time.Sleep(time.Second * 2)
 
 			watt := int(math.Round(percent * 0.01 * 390))
-			result = [4]rune{'E', '.', 0, 0}
+			result = [4]rune{'E', 0, 0, 0}
 			for i := 3; i > 0; i-- {
 				result[i] = rune(watt % 10)
 				watt /= 10
@@ -86,18 +86,21 @@ func main() {
 			tm.Show(result, false)
 			time.Sleep(time.Second * 2)
 
-			l := int(math.Round(timeLeft))
-			result = [4]rune{0x31 | 0x80, 'L', 0, 0}
-			for i := 3; i > 1; i-- {
+			l := int(math.Round(battLeft))
+			result = [4]rune{'b', 0, 0, 0}
+			for i := 3; i > 0; i-- {
 				result[i] = rune(l % 10)
 				l /= 10
+			}
+			if result[1] == 0 {
+				result[1] = '.'
 			}
 			tm.Show(result, false)
 			time.Sleep(time.Second * 2)
 
-			l = int(math.Round(battLeft))
-			result = [4]rune{'b', 0, 0, 0}
-			for i := 3; i > 0; i-- {
+			l = int(math.Round(timeLeft))
+			result = [4]rune{0x31 | 0x80, '.', 0, 0}
+			for i := 3; i > 1; i-- {
 				result[i] = rune(l % 10)
 				l /= 10
 			}
@@ -119,14 +122,20 @@ func main() {
 				var action string
 				if battLeft <= *minBattery {
 					action = *minCmd
-					if *once && minCmdExecuted > 0 {
-						continue
+					if *once {
+						if minCmdExecuted > 0 {
+							continue
+						}
+						maxCmdExecuted = 0 //重置max计数
 					}
 					minCmdExecuted++
 				} else if battLeft >= *maxBattery {
 					action = *maxCmd
-					if *once && maxCmdExecuted > 0 {
-						continue
+					if *once {
+						if maxCmdExecuted > 0 {
+							continue
+						}
+						minCmdExecuted = 0 //重置min计数
 					}
 					maxCmdExecuted++
 				}
